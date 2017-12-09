@@ -1,3 +1,5 @@
+#!/usr/bin/evn python
+# -*- coding: utf-8 -*-
 import cv2
 import numpy as np
 from tqdm import tqdm
@@ -5,7 +7,7 @@ import pandas as pd
 import glob
 from random import shuffle
 import os
-import pylob
+import pylab
 import imageio
 import skimage
 import sys
@@ -21,9 +23,10 @@ imageio.plugins.ffmpeg.download()
 ## 处理视频
 n_class = 30#分类个数
 m = 0#图片计数
-for video_index in range(n_class):
+print('处理视频...')
+for video_index in tqdm(range(n_class)):
     #视频的绝对路径
-    filename = 'path/to/train'
+    filename = '/home/new/桌面/pig/train'
     os.mkdir(filename+'/'+str(video_index+1))
     vid = imageio.get_reader(filename +'/'+ '%d.mp4'%(video_index+1),  'ffmpeg')
     for num,im in enumerate(vid):
@@ -44,8 +47,8 @@ shuffle(b) #训练图片索引洗牌
 ## 加载全部训练数据到内存加快训练，约占用60GB内存
 X = np.zeros((n, width, width, 3), dtype=np.uint8)
 y = np.zeros((n, n_class), dtype=np.uint8)
-
 j = 0
+print('加载训练图片...')
 for i in tqdm(range(30)):
     for infile in glob.glob('train/'+str(i+1)+'/*.jpg'):
         for k in range(3):
@@ -73,7 +76,7 @@ def get_features(MODEL, data=X):
     features = cnn_model.predict(data, batch_size=32, verbose=1)
     return features
 ## 获取训练集特征
-
+print('获取训练图片特征...')
 inception_features = get_features(InceptionV3, X)
 xception_features = get_features(Xception, X)
 
@@ -96,7 +99,7 @@ h = model.fit(features, y, batch_size=64, epochs=2, validation_split=0.1)
 ## test
 n_test = 3000 #测试集大小
 X_test = np.zeros((n_test, width, width, 3), dtype=np.uint8)
-
+print('加载测试图片...')
 k = 0
 l = []
 for infile in glob.glob('test_B/*.JPG'):
@@ -105,15 +108,14 @@ for infile in glob.glob('test_B/*.JPG'):
     f, ext = os.path.splitext(infile)
     l.append(f[7:])
     k = k+1
-
 ## 获取测试集features
+print('获取测试图片特征...')
 inception_features_test = get_features(InceptionV3, X_test)
 xception_features_test = get_features(Xception, X_test)
 
 features_test = np.concatenate([inception_features_test, xception_features_test], axis=-1)
 
 y_pred = model.predict(features_test, batch_size=64)
-
 ## 预测结果写入result.csv
 o=0
 for j in range(3000):
@@ -125,3 +127,4 @@ for j in range(3000):
     writer.writerows(datas)
     o=o+1
     f.close()
+print('结束')
